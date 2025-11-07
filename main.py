@@ -68,7 +68,8 @@ def run_action(acao: str, dry_run: bool):
 
 def start_scheduler(dry_run: bool):
     from apscheduler.schedulers.blocking import BlockingScheduler
-    scheduler = BlockingScheduler()
+    from zoneinfo import ZoneInfo
+    scheduler = BlockingScheduler(timezone=ZoneInfo("America/Sao_Paulo"))
     # Replicando horários do bot.py
     scheduler.add_job(lambda: run_action('bom_dia', dry_run), 'cron', hour=10, day_of_week='tue,thu')
     scheduler.add_job(lambda: run_action('bom_dia', dry_run), 'cron', hour=10, day_of_week='mon')
