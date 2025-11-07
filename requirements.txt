@@ -1,0 +1,5 @@
+tweepy
+apscheduler
+python-dotenv
+openai
+tzdata

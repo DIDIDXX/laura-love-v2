@@ -1,0 +1,108 @@
+import os
+import argparse
+from dotenv import load_dotenv
+
+# Importa as defs de novo.py
+from novo import bom_dia, boa_tarde, boa_noite, sextou_bom_dia, sextou_boa_tarde
+
+# Para recuperar o último texto gerado e postar
+from db_sqlite import listar_tweets
+
+load_dotenv('./.env')
+
+
+def tweetar(texto: str, dry_run: bool) -> bool:
+    """Envia um tweet com Tweepy se credenciais estiverem disponíveis; em dry-run, apenas imprime."""
+    if dry_run:
+        print("🧪 DRY_RUN ativo: não enviando para o Twitter. Conteúdo:")
+        print(texto)
+        return False
+    try:
+        from tweepy import Client
+        consumer_key = os.getenv('TWITTER_CONSUMER_KEY')
+        consumer_secret = os.getenv('TWITTER_CONSUMER_SECRET')
+        access_token = os.getenv('TWITTER_ACCESS_KEY')
+        access_token_secret = os.getenv('TWITTER_ACCESS_SECRET')
+
+        if not all([consumer_key, consumer_secret, access_token, access_token_secret]):
+            print("⚠️ Credenciais do Twitter não encontradas em .env; não foi enviado. Conteúdo:")
+            print(texto)
+            return False
+
+        client = Client(
+            consumer_key=consumer_key,
+            consumer_secret=consumer_secret,
+            access_token=access_token,
+            access_token_secret=access_token_secret,
+        )
+        client.create_tweet(text=texto)
+        print("✅ Tweet enviado com sucesso")
+        return True
+    except Exception as e:
+        print(f"❌ Falha ao enviar tweet: {e}")
+        print("Conteúdo:")
+        print(texto)
+        return False
+
+
+def run_action(acao: str, dry_run: bool):
+    mapping = {
+        'bom_dia': bom_dia,
+        'boa_tarde': boa_tarde,
+        'boa_noite': boa_noite,
+        'sextou_bom_dia': sextou_bom_dia,
+        'sextou_boa_tarde': sextou_boa_tarde,
+    }
+    fn = mapping.get(acao)
+    if not fn:
+        print(f"❌ Ação desconhecida: {acao}")
+        return
+    fn()
+    tweets = listar_tweets() or []
+    if tweets:
+        texto = tweets[0].get('tweet_text') or ''
+        tweetar(texto, dry_run)
+    else:
+        print("⚠️ Nenhum tweet encontrado para enviar")
+
+
+def start_scheduler(dry_run: bool):
+    from apscheduler.schedulers.blocking import BlockingScheduler
+    scheduler = BlockingScheduler()
+    # Replicando horários do bot.py
+    scheduler.add_job(lambda: run_action('bom_dia', dry_run), 'cron', hour=10, day_of_week='tue,thu')
+    scheduler.add_job(lambda: run_action('bom_dia', dry_run), 'cron', hour=10, day_of_week='mon')
+    scheduler.add_job(lambda: run_action('bom_dia', dry_run), 'cron', hour=10, day_of_week='wed')
+    # Sexta de manhã usa sextou_bom_dia
+    scheduler.add_job(lambda: run_action('sextou_bom_dia', dry_run), 'cron', hour=10, day_of_week='fri')
+    # Fim de semana bom dia às 13
+    scheduler.add_job(lambda: run_action('bom_dia', dry_run), 'cron', hour=13, day_of_week='sat,sun')
+    # Boa noite diário 01:30
+    scheduler.add_job(lambda: run_action('boa_noite', dry_run), 'cron', hour=1, minute=30, day_of_week='mon,tue,wed,thu,fri,sat,sun')
+    print("⏱️ Scheduler iniciado. Pressione Ctrl+C para parar.")
+    scheduler.start()
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='Orquestrador de tweets')
+    parser.add_argument('--acao', type=str, help='Ação: bom_dia | boa_tarde | boa_noite | sextou_bom_dia | sextou_boa_tarde')
+    parser.add_argument('--schedule', action='store_true', help='Iniciar scheduler')
+    parser.add_argument('--dry-run', action='store_true', help='Não enviar para o Twitter, apenas imprimir')
+    return parser.parse_args()
+
+
+def main():
+    args = parse_args()
+    env_dry = os.getenv('DRY_RUN', 'true').lower() == 'true'
+    dry_run = args.dry_run or env_dry
+    if args.schedule:
+        start_scheduler(dry_run)
+    elif args.acao:
+        run_action(args.acao, dry_run)
+    else:
+        # Default simples: gerar e enviar boa_noite
+        run_action('boa_noite', dry_run)
+
+
+if __name__ == '__main__':
+    main()
