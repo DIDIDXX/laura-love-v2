@@ -118,7 +118,7 @@ Este projeto usa licença MIT. Verifique/adicione o arquivo `LICENSE` no reposit
 ---
 
 ## 👋 Boas-vindas
-Seja bem-vindo(a)! Este projeto nasceu para espalhar mensagens carinhosas e leves, com um toque de inteligência e cuidado no estilo. Fique à vontade para explorar, deixar sua estrela ⭐️ e contribuir!
+Seja bem-vindo(a)! Este projeto nasceu para espalhar mensagens carinhosas e leves, com um toque de inteligência e cuidado no estilo. Fique à vontade para explorar, deixar sua estrela ⭐️ e contribuir!.
 
 ### Chamada para ação
 - ⭐️ Dê uma star
