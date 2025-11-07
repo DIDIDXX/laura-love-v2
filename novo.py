@@ -113,7 +113,7 @@ def _definir_tom(limit: int = TONE_ROTATION_WINDOW):
 
         completion = client.chat.completions.create(
             extra_body={"temperature": 0.2},
-            model="openai/gpt-oss-20b:free",
+            model="deepseek/deepseek-chat-v3-0324:free",
             messages=[
                 {"role": "system", "content": system_msg},
                 {"role": "user", "content": user_msg},
@@ -213,7 +213,7 @@ def _classificar_tons_por_tweet(limit: int = 5):
                 {"role": "system", "content": system_msg},
                 {"role": "user", "content": user_msg},
             ],
-            model="openai/gpt-oss-20b:free",
+            model="deepseek/deepseek-chat-v3-0324:free",
         )
         resp_text = completion.choices[0].message.content.strip()
         try:
@@ -263,7 +263,7 @@ def bom_dia():
     )
     completion = client.chat.completions.create(
       extra_body={},
-      model="openai/gpt-oss-20b:free",
+      model="deepseek/deepseek-chat-v3-0324:free",
       messages=[
                   {
                     "role": "system",
@@ -309,7 +309,7 @@ def boa_tarde():
     )
     completion = client.chat.completions.create(
       extra_body={},
-      model="openai/gpt-oss-20b:free",
+      model="deepseek/deepseek-chat-v3-0324:free",
       messages=[
                   {
                     "role": "system",
@@ -356,7 +356,7 @@ def boa_noite():
     )
     completion = client.chat.completions.create(
       extra_body={},
-      model="openai/gpt-oss-20b:free",
+      model="deepseek/deepseek-chat-v3-0324:free",
       messages=[
                   {
                     "role": "system",
@@ -403,7 +403,7 @@ def sextou_bom_dia():
     )
     completion = client.chat.completions.create(
       extra_body={},
-      model="openai/gpt-oss-20b:free",
+      model="deepseek/deepseek-chat-v3-0324:free",
       messages=[
                   {
                     "role": "system",
@@ -450,7 +450,7 @@ def sextou_boa_tarde():
     )
     completion = client.chat.completions.create(
       extra_body={},
-      model="openai/gpt-oss-20b:free",
+      model="deepseek/deepseek-chat-v3-0324:free",
       messages=[
                   {
                     "role": "system",
