@@ -1,5 +1,5 @@
 import os
-import argparse
+import time  # Importe 'time' se quiser adicionar um atraso, mas 'apscheduler' já cuida disso
 from dotenv import load_dotenv
 
 # Importa as defs de novo.py
@@ -7,6 +7,10 @@ from novo import bom_dia, boa_tarde, boa_noite, sextou_bom_dia, sextou_boa_tarde
 
 # Para recuperar o último texto gerado e postar
 from db_sqlite import listar_tweets
+
+# Importações do Scheduler
+from apscheduler.schedulers.blocking import BlockingScheduler
+from zoneinfo import ZoneInfo
 
 load_dotenv('./.env')
 
@@ -46,6 +50,7 @@ def tweetar(texto: str, dry_run: bool) -> bool:
 
 
 def run_action(acao: str, dry_run: bool):
+    """Executa a função de geração de conteúdo e depois tenta tweetar o resultado."""
     mapping = {
         'bom_dia': bom_dia,
         'boa_tarde': boa_tarde,
@@ -57,52 +62,57 @@ def run_action(acao: str, dry_run: bool):
     if not fn:
         print(f"❌ Ação desconhecida: {acao}")
         return
-    fn()
+    
+    print(f"Executando ação: {acao}")
+    fn()  # Roda a função de 'novo.py' (que deve salvar no DB)
+    
+    # Busca o resultado do banco de dados para postar
     tweets = listar_tweets() or []
     if tweets:
         texto = tweets[0].get('tweet_text') or ''
-        tweetar(texto, dry_run)
+        if texto:
+            tweetar(texto, dry_run)
+        else:
+            print("⚠️ Texto do tweet está vazio, não enviado.")
     else:
-        print("⚠️ Nenhum tweet encontrado para enviar")
+        print("⚠️ Nenhum tweet encontrado no DB para enviar após a ação.")
 
 
 def start_scheduler(dry_run: bool):
-    from apscheduler.schedulers.blocking import BlockingScheduler
-    from zoneinfo import ZoneInfo
+    """Inicia o agendador de tarefas."""
     scheduler = BlockingScheduler(timezone=ZoneInfo("America/Sao_Paulo"))
+    
+    print("Configurando agendamentos...")
+    
     # Replicando horários do bot.py
-    scheduler.add_job(lambda: run_action('bom_dia', dry_run), 'cron', hour=10, day_of_week='tue,thu')
-    scheduler.add_job(lambda: run_action('bom_dia', dry_run), 'cron', hour=10, day_of_week='mon')
-    scheduler.add_job(lambda: run_action('bom_dia', dry_run), 'cron', hour=10, day_of_week='wed')
+    scheduler.add_job(lambda: run_action('bom_dia', dry_run), 'cron', hour=7, day_of_week='tue,thu')
+    scheduler.add_job(lambda: run_action('bom_dia', dry_run), 'cron', hour=7, day_of_week='mon')
+    scheduler.add_job(lambda: run_action('bom_dia', dry_run), 'cron', hour=7, day_of_week='wed')
     # Sexta de manhã usa sextou_bom_dia
-    scheduler.add_job(lambda: run_action('sextou_bom_dia', dry_run), 'cron', hour=10, day_of_week='fri')
-    # Fim de semana bom dia às 13
-    scheduler.add_job(lambda: run_action('bom_dia', dry_run), 'cron', hour=13, day_of_week='sat,sun')
-    # Boa noite diário 01:30
-    scheduler.add_job(lambda: run_action('boa_noite', dry_run), 'cron', hour=1, minute=30, day_of_week='mon,tue,wed,thu,fri,sat,sun')
+    scheduler.add_job(lambda: run_action('sextou_bom_dia', dry_run), 'cron', hour=7, day_of_week='fri')
+    # Fim de semana bom dia às 9
+    scheduler.add_job(lambda: run_action('bom_dia', dry_run), 'cron', hour=9, day_of_week='sat,sun')
+    # Boa noite diário 22:00
+    scheduler.add_job(lambda: run_action('boa_noite', dry_run), 'cron', hour=22, day_of_week='mon,tue,wed,thu,fri,sat,sun')
+    
     print("⏱️ Scheduler iniciado. Pressione Ctrl+C para parar.")
     scheduler.start()
 
 
-def parse_args():
-    parser = argparse.ArgumentParser(description='Orquestrador de tweets')
-    parser.add_argument('--acao', type=str, help='Ação: bom_dia | boa_tarde | boa_noite | sextou_bom_dia | sextou_boa_tarde')
-    parser.add_argument('--schedule', action='store_true', help='Iniciar scheduler')
-    parser.add_argument('--dry-run', action='store_true', help='Não enviar para o Twitter, apenas imprimir')
-    return parser.parse_args()
-
-
 def main():
-    args = parse_args()
-    env_dry = os.getenv('DRY_RUN', 'true').lower() == 'true'
-    dry_run = args.dry_run or env_dry
-    if args.schedule:
-        start_scheduler(dry_run)
-    elif args.acao:
-        run_action(args.acao, dry_run)
+    """Função principal que inicia o bot."""
+    
+    # A lógica de 'dry_run' agora vem apenas do arquivo .env
+    # Se DRY_RUN não estiver no .env, o padrão é 'false' (ou seja, vai postar)
+    env_dry = os.getenv('DRY_RUN', 'false').lower() == 'true'
+    
+    if env_dry:
+        print("🧪 DRY_RUN ativo (definido no .env). Nenhum tweet será enviado.")
     else:
-        # Default simples: gerar e enviar boa_noite
-        run_action('boa_noite', dry_run)
+        print("🚀 Bot iniciando em MODO DE PRODUÇÃO. Tweets serão enviados.")
+        
+    # Inicia o scheduler diretamente
+    start_scheduler(dry_run=env_dry)
 
 
 if __name__ == '__main__':
