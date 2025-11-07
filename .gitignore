@@ -2,3 +2,4 @@ node_modules
 .prettierrc
 package-lock.json
 config.env
+.env
