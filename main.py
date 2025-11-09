@@ -110,8 +110,13 @@ def main():
         print("🧪 DRY_RUN ativo (definido no .env). Nenhum tweet será enviado.")
     else:
         print("🚀 Bot iniciando em MODO DE PRODUÇÃO. Tweets serão enviados.")
-        
-    # Inicia o scheduler diretamente
+    
+    # Envio imediato simples antes de iniciar o scheduler
+    msg = "Estou iniciando... tweets para Laura em breve"
+    print(f"💬 Envio imediato: {msg}")
+    tweetar(msg, env_dry)
+    
+    # Inicia o scheduler
     start_scheduler(dry_run=env_dry)
 
 
